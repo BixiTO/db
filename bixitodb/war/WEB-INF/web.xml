@@ -20,7 +20,7 @@
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>updater</servlet-name>
-        <url-pattern>/remote/update</url-pattern>
+        <url-pattern>/admin/update</url-pattern>
     </servlet-mapping>
     <welcome-file-list>
         <welcome-file>index.html</welcome-file>

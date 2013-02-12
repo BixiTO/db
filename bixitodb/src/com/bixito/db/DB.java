@@ -18,34 +18,56 @@ import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
 import com.google.appengine.api.datastore.Query;
+import static com.bixito.db.Constants.*;
 
 public class DB {
-	
-	static Key key = null;
 
-	public static String getStationsData() {
+	private static DatastoreService datastore = DatastoreServiceFactory
+			.getDatastoreService();
 
-		DatastoreService datastore = DatastoreServiceFactory
-				.getDatastoreService();
-		
+	public static String getStationsData() throws Exception {
+		//
+		// Query query = new Query(BIXI_DATA_DB_KIND);
+		// List<Entity> results = datastore.prepare(query).asList(
+		// FetchOptions.Builder.withDefaults());
+		//
+		Text actualData = null;
 
-		Query query = new Query("BikesData");
-		List<Entity> results = datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
-		
-		Text t = null;
-		
-		if(results.size() != 0){
-			t = (Text) results.get(0).getProperty("data");
+		Entity stations = datastore.get(BIXI_DATA_KEY);
+		// if (results.size() != 0) {
+		// actualData = (Text)
+		// results.get(0).getProperty(BIXI_DATA_DB_PROPERTY);
+		// }
+		if (stations != null) {
+			actualData = (Text) stations.getProperty(BIXI_DATA_DB_PROPERTY);
+			return actualData.getValue();
 		}
-		
-		return t.getValue();
+		return "";
 
 	}
 
 	public static void updateStationsData() throws Exception {
 
+		Entity stations = null;
+
+		if (BIXI_DATA_KEY == null) {
+			// check if we already have our entity in db
+			Query query = new Query(BIXI_DATA_DB_KIND);
+			List<Entity> results = datastore.prepare(query).asList(
+					FetchOptions.Builder.withDefaults());
+			if (results.size() > 0) {
+				stations = results.get(0);
+			} else {
+				// first time, create the thing
+				stations = new Entity(BIXI_DATA_DB_KIND);
+				BIXI_DATA_KEY = stations.getKey();
+			}
+		} else {
+			stations = datastore.get(BIXI_DATA_KEY);
+		}
+
 		String value = "";
-		URL url = new URL("https://toronto.bixi.com/data/bikeStations.xml");
+		URL url = new URL(BIXI_DATA_URL);
 		URLConnection yc = url.openConnection();
 		BufferedReader in = new BufferedReader(new InputStreamReader(
 				yc.getInputStream()));
@@ -55,14 +77,9 @@ public class DB {
 			value = value + inputLine;
 		in.close();
 
-		key = KeyFactory.createKey("bikes", "bikes");
+		Text actualData = new Text(value);
+		stations.setProperty(BIXI_DATA_DB_PROPERTY, actualData);
 
-		Entity stations = new Entity("BikesData", key);
-		Text valuetext = new Text(value);
-		stations.setProperty("data", valuetext);
-
-		DatastoreService datastore = DatastoreServiceFactory
-				.getDatastoreService();
 		datastore.put(stations);
 	}
 
