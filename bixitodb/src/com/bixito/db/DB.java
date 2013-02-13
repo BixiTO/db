@@ -10,6 +10,7 @@ import java.util.List;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Query;
 import static com.bixito.db.Constants.*;
@@ -27,7 +28,7 @@ public class DB {
 		//
 		Text actualData = null;
 
-		Entity stations = datastore.get(BIXI_DATA_KEY);
+		Entity stations = getStationsEntity();
 		// if (results.size() != 0) {
 		// actualData = (Text)
 		// results.get(0).getProperty(BIXI_DATA_DB_PROPERTY);
@@ -42,24 +43,7 @@ public class DB {
 
 	public static void updateStationsData() throws Exception {
 
-		Entity stations = null;
-
-		if (BIXI_DATA_KEY == null) {
-			// check if we already have our entity in db
-			Query query = new Query(BIXI_DATA_DB_KIND);
-			List<Entity> results = datastore.prepare(query).asList(
-					FetchOptions.Builder.withDefaults());
-			if (results.size() > 0) {
-				stations = results.get(0);
-			} else {
-				// first time, create the thing
-				stations = new Entity(BIXI_DATA_DB_KIND);
-				BIXI_DATA_KEY = stations.getKey();
-			}
-		} else {
-			stations = datastore.get(BIXI_DATA_KEY);
-		}
-
+		Entity stations = getStationsEntity();
 		String value = "";
 		URL url = new URL(BIXI_DATA_URL);
 		URLConnection yc = url.openConnection();
@@ -75,6 +59,27 @@ public class DB {
 		stations.setProperty(BIXI_DATA_DB_PROPERTY, actualData);
 
 		datastore.put(stations);
+	}
+	
+	private static Entity getStationsEntity() throws Exception{
+		Entity stations = null;
+		if (BIXI_DATA_KEY == null) {
+			// check if we already have our entity in db
+			Query query = new Query(BIXI_DATA_DB_KIND);
+			List<Entity> results = datastore.prepare(query).asList(
+					FetchOptions.Builder.withDefaults());
+			if (results.size() > 0) {
+				stations = results.get(0);
+			} else {
+				// first time, create the thing
+				stations = new Entity(BIXI_DATA_DB_KIND);
+				BIXI_DATA_KEY = stations.getKey();
+			}
+		} else {
+			stations = datastore.get(BIXI_DATA_KEY);
+		}
+		
+		return stations;
 	}
 
 }
