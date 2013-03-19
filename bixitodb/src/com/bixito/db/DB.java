@@ -3,14 +3,16 @@ package com.bixito.db;
 import com.google.appengine.api.datastore.Text;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Query;
 import static com.bixito.db.Constants.*;
@@ -60,8 +62,8 @@ public class DB {
 
 		datastore.put(stations);
 	}
-	
-	private static Entity getStationsEntity() throws Exception{
+
+	private static Entity getStationsEntity() throws Exception {
 		Entity stations = null;
 		if (BIXI_DATA_KEY == null) {
 			// check if we already have our entity in db
@@ -78,8 +80,20 @@ public class DB {
 		} else {
 			stations = datastore.get(BIXI_DATA_KEY);
 		}
-		
+
 		return stations;
 	}
 
+	public static void addStatistics(String deviceId) throws Exception {
+
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("datum[deviceId]", deviceId);
+		params.put("datum[location]", "NotAvailable");
+		params.put("datum[time]", GregorianCalendar.getInstance().getTime()
+				.toString());
+		HttpURLConnection as = HttpUtility.sendPostRequest(
+				Constants.STATS_SERVER, params);
+		as.getExpiration();
+
+	}
 }

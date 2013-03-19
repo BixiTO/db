@@ -3,6 +3,6 @@
 	<cron>
 		<url>/admin/update</url>
 		<description>update bixi data</description>
-		<schedule>every 2 minutes</schedule>
+		<schedule>every 5 minutes</schedule>
 	</cron>
 </cronentries>

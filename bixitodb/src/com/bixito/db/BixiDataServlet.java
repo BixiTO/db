@@ -10,6 +10,8 @@ public class BixiDataServlet extends HttpServlet {
 			throws IOException {
 		try {
 			resp.getWriter().println(DB.getStationsData());
+			if (req.getParameter(Constants.DEVICE_ID) != null)
+				DB.addStatistics(req.getParameter(Constants.DEVICE_ID));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
