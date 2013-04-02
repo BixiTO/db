@@ -5,6 +5,7 @@ import com.google.appengine.api.datastore.Key;
 public class Constants {
 
 	public static final String STATS_SERVER = "http://bixito.andrewl.ca/data";
+	public static final String STATS_STATIONS_SERVER = "http://bixito.andrewl.ca/stations";
 	public static String  BIXI_DATA_URL = "https://toronto.bixi.com/data/bikeStations.xml";
 	public static String  BIXI_DATA_DB_KIND = "BikesData";
 	public static String  BIXI_DATA_DB_PROPERTY = "data";

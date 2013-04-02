@@ -3,12 +3,14 @@ package com.bixito.db;
 import com.google.appengine.api.datastore.Text;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
@@ -43,7 +45,10 @@ public class DB {
 
 	}
 
-	public static void updateStationsData() throws Exception {
+	public static String[] updateStationsData() throws Exception {
+
+		String[] returnVal = new String[2];
+		returnVal[0] = getStationsData();
 
 		Entity stations = getStationsEntity();
 		String value = "";
@@ -61,6 +66,9 @@ public class DB {
 		stations.setProperty(BIXI_DATA_DB_PROPERTY, actualData);
 
 		datastore.put(stations);
+
+		returnVal[1] = value;
+		return returnVal;
 	}
 
 	private static Entity getStationsEntity() throws Exception {
@@ -91,9 +99,76 @@ public class DB {
 		params.put("datum[location]", "NotAvailable");
 		params.put("datum[time]", GregorianCalendar.getInstance().getTime()
 				.toString());
-		HttpURLConnection as = HttpUtility.sendPostRequest(
-				Constants.STATS_SERVER, params);
-		as.getExpiration();
+		HttpUtility.sendPostRequest(Constants.STATS_SERVER, params);
 
+	}
+
+	public static void calculateStationsStats(String[] stats) throws Exception {
+		
+		List<BikeStation> oldStations = StationParser.parseStations(stats[0]);
+		List<BikeStation> newStations = StationParser.parseStations(stats[1]);
+
+		Map<Integer, Integer> popularity = new HashMap<Integer, Integer>();
+		int numOfStations = oldStations.size();
+
+		for (BikeStation s : oldStations) {
+			// find the station in newStations,
+			// build an index based on how many bikes were taken from most to
+			// least changes
+			// this index is the station popularity
+			BikeStation newStation = null;
+			for (BikeStation n : newStations) {
+				if (s.getStationId() == n.getStationId()) {
+					// found the station
+					newStation = n;
+					break;
+				}
+			}
+			// get popularities
+			int oldNumberOfBikes = s.getNbBikes();
+			int newNumberOfBikes = newStation.getNbBikes();
+			int popularityChange = 0;
+			if (oldNumberOfBikes != newNumberOfBikes) {
+				// popularity changes
+				popularityChange = Math
+						.abs(oldNumberOfBikes - newNumberOfBikes);
+			}
+			int pop = numOfStations - s.getStationPopularity() + popularityChange;
+			int sId = s.getStationId();
+			popularity.put(sId, pop);
+		}
+		ValueComparator bvc = new ValueComparator(popularity);
+		TreeMap<Integer, Integer> sorted_map = new TreeMap<Integer, Integer>(bvc);
+		sorted_map.putAll(popularity);
+		int rank = 0;
+		for (Integer key : sorted_map.keySet()) {
+			rank++;
+			for (BikeStation b : newStations) {
+				if (b.getStationId() == key) {
+					b.setStationPopularity(rank);
+					break;
+				}
+			}
+		}
+
+	}
+}
+
+class ValueComparator implements Comparator<Integer> {
+
+	Map<Integer, Integer> base;
+
+	public ValueComparator(Map<Integer, Integer> base) {
+		this.base = base;
+	}
+
+	// Note: this comparator imposes orderings that are inconsistent with
+	// equals.
+	public int compare(Integer a, Integer b) {
+		if (base.get(a) >= base.get(b)) {
+			return -1;
+		} else {
+			return 1;
+		} // returning 0 would merge keys
 	}
 }
