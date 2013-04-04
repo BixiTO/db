@@ -40,8 +40,9 @@ public class HttpUtility {
 			throws IOException {
 		URL url = new URL(requestURL);
 		httpConn = (HttpURLConnection) url.openConnection();
+		httpConn.setInstanceFollowRedirects(true);
 		httpConn.setUseCaches(false);
-
+		httpConn.setConnectTimeout(900000);
 		httpConn.setDoInput(true); // true if we want to read server's response
 		httpConn.setDoOutput(false); // false indicates this is a GET request
 
@@ -53,6 +54,8 @@ public class HttpUtility {
 		URL url = new URL(requestURL);
 		httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setUseCaches(false);
+		httpConn.setInstanceFollowRedirects(false);
+		httpConn.setConnectTimeout(900000);
 		httpConn.setRequestMethod("DELETE");
 		httpConn.setDoInput(false); // true if we want to read server's response
 		httpConn.setDoOutput(false); // false indicates this is a GET request
@@ -76,7 +79,8 @@ public class HttpUtility {
 		URL url = new URL(requestURL);
 		httpConn = (HttpURLConnection) url.openConnection();
 		httpConn.setUseCaches(false);
-
+		httpConn.setInstanceFollowRedirects(true);
+		httpConn.setConnectTimeout(900000);
 		httpConn.setDoInput(true); // true indicates the server returns response
 
 		StringBuffer requestParams = new StringBuffer();
@@ -109,14 +113,14 @@ public class HttpUtility {
 	public static HttpURLConnection sendPutRequest(String requestURL,
 			Map<String, String> params) throws IOException {
 		URL url = new URL(requestURL);
-		httpConn = (HttpURLConnection) url.openConnection();
-
+		httpConn.setInstanceFollowRedirects(true);
+		httpConn.setConnectTimeout(900000);
 		httpConn.setUseCaches(false);
 		httpConn.setDoInput(true); // true indicates the server returns response
 		httpConn.setDoOutput(true);
 		httpConn.setRequestMethod("PUT");
 		httpConn.setRequestProperty("Content-Type",
-				"application/x-www-form-urlencoded");
+				"multipart/form-data");
 		StringBuffer requestParams = new StringBuffer();
 
 		if (params != null && params.size() > 0) {

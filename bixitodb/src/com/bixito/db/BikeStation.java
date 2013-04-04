@@ -4,7 +4,10 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashMap;
+
+import org.mortbay.log.Log;
 
 public class BikeStation {
 	int stationId;
@@ -20,6 +23,7 @@ public class BikeStation {
 	int nbBikes;
 	int nbEmptyDocks;
 	long latestUpdateTime;
+	int popularity;
 
 	/**
 	 * 
@@ -55,7 +59,7 @@ public class BikeStation {
 		setNbBikes(nbBikes);
 		setNbEmptyDocks(nbEmptyDocks);
 		setLatestUpdateTime(latestUpdateTime);
-
+		popularity = 0;
 	}
 
 	public BikeStation copy() {
@@ -265,6 +269,11 @@ public class BikeStation {
 
 	public int getStationPopularity() throws Exception {
 
+		
+		if(this.popularity != 0) {
+			return this.popularity;
+		}
+		DB.Log.warning("getting popularity of station "+stationId);
 		HttpURLConnection ret = HttpUtility
 				.sendGetRequest(Constants.STATS_STATIONS_SERVER + "/"
 						+ stationId);
@@ -279,10 +288,13 @@ public class BikeStation {
 			while ((l = br.readLine()) != null) {
 				if(l.contains("Rank:")){
 					String s = br.readLine().substring(2);
-					return Integer.valueOf(s);
+					this.popularity = Integer.valueOf(s);
+					ret.disconnect();
+					return popularity;
 				}
 			}
 		}
+		ret.disconnect();
 		return Integer.valueOf("50");
 	}
 
@@ -319,22 +331,26 @@ public class BikeStation {
 			upordown = prev - rank;
 		}
 		
+		params.put("station[stationId]", String.valueOf(stationId));
 		params.put("station[rank]", String.valueOf(rank));
 		params.put("station[upordown]", String.valueOf(upordown));
 		
-		
-		HttpURLConnection r = HttpUtility.sendPutRequest(Constants.STATS_STATIONS_SERVER + "/"
-				+ stationId, params);
-		int code =	r.getResponseCode();
-		Integer s = new Integer(code);
-//		URL url = new URL(Constants.STATS_STATIONS_SERVER + "/"+ stationId);
-//		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//		connection.setRequestMethod("DELETE");
-//		int responseCode = connection.getResponseCode();
+		DB.Log.warning("Setting rank new :"+rank+" old:"+prev+" stationId:"+this.getStationId());
+//		HttpURLConnection r = HttpUtility.sendPutRequest(Constants.STATS_STATIONS_SERVER + "/"
+//				+ stationId, params);
+//		int code =	r.getResponseCode();
+//		r.disconnect();
+		URL url = new URL(Constants.STATS_STATIONS_SERVER + "/"+ stationId);
+		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		connection.setRequestMethod("DELETE");
+		int responseCode = connection.getResponseCode();
+		HttpURLConnection r = HttpUtility.sendPostRequest(Constants.STATS_STATIONS_SERVER, params);
+		r.getResponseCode();
 
-//		HttpURLConnection r = HttpUtility.sendPostRequest(Constants.STATS_STATIONS_SERVER, params);
-//		r.getResponseCode();
+	}
 
+	public void setLocalPopularity(int p) {
+		this.popularity = p;
 	}
 
 }

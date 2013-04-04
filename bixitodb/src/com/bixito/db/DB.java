@@ -1,8 +1,10 @@
 package com.bixito.db;
 
+import java.util.logging.Logger;
 import com.google.appengine.api.datastore.Text;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Comparator;
@@ -11,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.mortbay.log.Log;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
@@ -21,6 +25,8 @@ import static com.bixito.db.Constants.*;
 
 public class DB {
 
+	public static final Logger Log = Logger.getLogger(DB.class
+			.getName());
 	private static DatastoreService datastore = DatastoreServiceFactory
 			.getDatastoreService();
 
@@ -61,7 +67,7 @@ public class DB {
 		while ((inputLine = in.readLine()) != null)
 			value = value + inputLine;
 		in.close();
-
+		DB.Log.warning("inside updateStationsData() finished parinsg bixi xml");
 		Text actualData = new Text(value);
 		stations.setProperty(BIXI_DATA_DB_PROPERTY, actualData);
 
@@ -99,11 +105,12 @@ public class DB {
 		params.put("datum[location]", "NotAvailable");
 		params.put("datum[time]", GregorianCalendar.getInstance().getTime()
 				.toString());
-		HttpUtility.sendPostRequest(Constants.STATS_SERVER, params);
-
+		HttpURLConnection r = HttpUtility.sendPostRequest(Constants.STATS_SERVER, params);
+		r.getResponseCode();
 	}
 
 	public static void calculateStationsStats(String[] stats) throws Exception {
+
 		
 		List<BikeStation> oldStations = StationParser.parseStations(stats[0]);
 		List<BikeStation> newStations = StationParser.parseStations(stats[1]);
@@ -133,12 +140,16 @@ public class DB {
 				popularityChange = Math
 						.abs(oldNumberOfBikes - newNumberOfBikes);
 			}
-			int pop = numOfStations - s.getStationPopularity() + popularityChange;
+			int p = s.getStationPopularity();
+			newStation.setLocalPopularity(p);
+			int pop = numOfStations - p
+					+ popularityChange;
 			int sId = s.getStationId();
 			popularity.put(sId, pop);
 		}
 		ValueComparator bvc = new ValueComparator(popularity);
-		TreeMap<Integer, Integer> sorted_map = new TreeMap<Integer, Integer>(bvc);
+		TreeMap<Integer, Integer> sorted_map = new TreeMap<Integer, Integer>(
+				bvc);
 		sorted_map.putAll(popularity);
 		int rank = 0;
 		for (Integer key : sorted_map.keySet()) {
@@ -151,7 +162,9 @@ public class DB {
 			}
 		}
 
+		Log.warning("Finished updating station stats. Rank should be updated now");
 	}
+	
 }
 
 class ValueComparator implements Comparator<Integer> {
